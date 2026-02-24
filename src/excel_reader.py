@@ -19,15 +19,16 @@ def main():
     # course_name = input("Which course are you working with? ")
     # lesson_name = input(f"What lesson are you looking for in {course_name}? ") 
     lesson_name = 'MyPlate'
-
+    sheet_name = 'Exercise Science Duplicate'
+    user_source = retrieve_user_section(lesson_name, sheet_name)
     for sheet in excel_sheet.worksheets: #iterates through the sheets
         print(sheet.title) #prints the name of the title
-        for row in sheet.iter_rows(min_col=LESSON_INDEX, max_col=LESSON_INDEX):
-            cell = row[0]
+        for row in sheet.iter_rows(min_col=LESSON_INDEX, max_col=LESSON_INDEX): #iterates through the rows of the sheet
+            cell = row[0] #allows the cell to be read properly
             if cell.value != None:
                 if cell.value.lower() == lesson_name.lower():
                     print(f"{cell.value} fount at: \nRow: {cell.row}")
-                    print(Retrieving_Section(cell.row, sheet))
+                    print(retrieving_section(cell.row, sheet))
 
             
 '''
@@ -40,11 +41,25 @@ In terms of functions:
         - is modified
         - is original
 '''
-def Retrieve_User_Section():
+def iterate_through_rows(sheet, lesson_name):
+    for row in sheet.iter_rows(min_col=LESSON_INDEX, max_col=LESSON_INDEX): #iterates through the rows of the sheet
+        cell = row[0] #allows the cell to be read properly
+        if cell.value != None:
+            if cell.value.lower() == lesson_name.lower():
+                print(f"{cell.value} fount at: \nRow: {cell.row}")
+                return retrieving_section(cell.row, sheet)
+    return None
 
-    return "Source of the user's input lesson"
 
-def Retrieving_Section(row_number, sheet):
+def retrieve_user_section(lesson_name, sheet_name):
+    sheet = excel_sheet[sheet_name]
+    user_section = iterate_through_rows(sheet, lesson_name)
+    sheet_code = sheet['A3'].value
+    split_section = split_section(user_section)
+    user_source = f"{sheet_code} {split_section}"
+    return user_source
+
+def retrieving_section(row_number, sheet):
     #Getting the source of derived course
     row = row_number
     column = SECTION_INDEX
@@ -57,12 +72,12 @@ def Retrieving_Section(row_number, sheet):
         cell = sheet.cell(row=row, column=column)
     return cell.value
 
-def Checking_Source(source_row, sheet, original_source):
+def checking_source(source_row, sheet, original_source):
     cell = sheet.cell(row = source_row, column = SOURCE_INDEX)
     cell_contents = cell.value
-    if Is_Original(cell_contents):
+    if is_original(cell_contents):
         return False
-    # elif Is_Modified(cell_contents):
+    # elif is_modified(cell_contents):
     #     cell_pieces = cell_contents.split() 
     #     to_add_to_modified = f"{cell_pieces[0]} {cell_pieces[1]}"
     #     modified_source_lesson.append(to_add_to_modified)
@@ -72,7 +87,7 @@ def Checking_Source(source_row, sheet, original_source):
     else:
         return False
 
-def Is_Modified(cell_contents):
+def is_modified(cell_contents):
     cell = cell_contents.strip().lower()
     split_cell = cell.split()
     if "modified" in split_cell:
@@ -80,7 +95,7 @@ def Is_Modified(cell_contents):
     else: 
         return False
 
-def Is_Original(cell_contents):
+def is_original(cell_contents):
     cell = cell_contents.strip().lower()
     split_cell = cell.split()
     if "original" in split_cell:
@@ -88,6 +103,13 @@ def Is_Original(cell_contents):
     else: 
         return False
     
+def split_section(section):
+    #will have to be able to split the section code by spaces and colons
+    cleaned = section.replace(":", "")
+    split_section = cleaned.split()
+    return split_section[1]
+
+
 if __name__ == "__main__":
     main()
 
