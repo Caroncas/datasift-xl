@@ -23,12 +23,14 @@ def main():
     user_source = retrieve_user_section(lesson_name, sheet_name)
     for sheet in excel_sheet.worksheets: #iterates through the sheets
         print(sheet.title) #prints the name of the title
-        for row in sheet.iter_rows(min_col=LESSON_INDEX, max_col=LESSON_INDEX): #iterates through the rows of the sheet
-            cell = row[0] #allows the cell to be read properly
-            if cell.value != None:
-                if cell.value.lower() == lesson_name.lower():
-                    print(f"{cell.value} fount at: \nRow: {cell.row}")
-                    print(retrieving_section(cell.row, sheet))
+        '''I'm 90% sure I won't need this, I just want to be sure before I delete it all lol'''
+        # for row in sheet.iter_rows(min_col=LESSON_INDEX, max_col=LESSON_INDEX): #iterates through the rows of the sheet
+        #     cell = row[0] #allows the cell to be read properly
+        #     if cell.value != None:
+        #         if cell.value.lower() == lesson_name.lower():
+        #             print(f"{cell.value} fount at: \nRow: {cell.row}")
+        #             print(retrieving_section(cell.row, sheet))
+        retrieved_new_section = iterate_through_rows(sheet, lesson_name, user_source)
 
             
 '''
@@ -41,13 +43,19 @@ In terms of functions:
         - is modified
         - is original
 '''
-def iterate_through_rows(sheet, lesson_name):
+def iterate_through_rows(sheet, lesson_name, original_source):
     for row in sheet.iter_rows(min_col=LESSON_INDEX, max_col=LESSON_INDEX): #iterates through the rows of the sheet
         cell = row[0] #allows the cell to be read properly
         if cell.value != None:
             if cell.value.lower() == lesson_name.lower():
-                print(f"{cell.value} fount at: \nRow: {cell.row}")
-                return retrieving_section(cell.row, sheet)
+                # print(f"{cell.value} fount at: \nRow: {cell.row}")
+                source_bool, retrieved_section = checking_source(cell.row, sheet, original_source)
+                if source_bool == True:
+                    #so actually I think that this needs to change so it can be used in retrieve user section
+                    same_source_lesson.append(retrieved_section)
+                elif source_bool == False:
+                    modified_source_lesson.append(retrieved_section)
+                #return retrieving_section(cell.row, sheet)#returns the source of the derived lesson
     return None
 
 
@@ -55,37 +63,40 @@ def retrieve_user_section(lesson_name, sheet_name):
     sheet = excel_sheet[sheet_name]
     user_section = iterate_through_rows(sheet, lesson_name)
     sheet_code = sheet['A3'].value
-    split_section = split_section(user_section)
-    user_source = f"{sheet_code} {split_section}"
+    user_source = f"{sheet_code} {split_section(user_section)}"
     return user_source
 
 def retrieving_section(row_number, sheet):
     #Getting the source of derived course
-    row = row_number
-    column = SECTION_INDEX
-    cell = sheet.cell(row=row, column=column)
+    row=row_number
+    cell = sheet.cell(row=row, column=SECTION_INDEX)
     while cell.value == None:
         if cell.value == None:
             row = row - 1
         else:
             break   
-        cell = sheet.cell(row=row, column=column)
-    return cell.value
+        cell = sheet.cell(row=row, column=SECTION_INDEX)
+        #need to update this so it returns the course & the section name
+    sheet_code = sheet['A3'].value
+    source_code = f"{sheet_code} {split_section(cell.value)}"
+    return source_code
 
 def checking_source(source_row, sheet, original_source):
     cell = sheet.cell(row = source_row, column = SOURCE_INDEX)
     cell_contents = cell.value
     if is_original(cell_contents):
-        return False
+        return None, None
     # elif is_modified(cell_contents):
     #     cell_pieces = cell_contents.split() 
     #     to_add_to_modified = f"{cell_pieces[0]} {cell_pieces[1]}"
     #     modified_source_lesson.append(to_add_to_modified)
     #     return False
     elif cell_contents == original_source:
-        return True
+        return True, retrieving_section(cell.row, sheet)
+    elif is_modified(cell_contents):
+        return False, retrieving_section(cell.row, sheet)
     else:
-        return False
+        return None, None
 
 def is_modified(cell_contents):
     cell = cell_contents.strip().lower()
